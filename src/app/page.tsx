@@ -136,6 +136,20 @@ const Home = () => {
       formData.append("image", selectedFile);
       formData.append("number", selectedAnimation.toString());
 
+      const IPFSData = new FormData();
+      IPFSData.append("file", selectedFile);
+      IPFSData.append("bucket_name", "test1");
+      
+      const IPFSResponse = await fetch(
+        "http://0.0.0.0:8070/upload",  // Updated endpoint
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      console.log("success", IPFSResponse)
+        
       const response = await fetch(
         "https://test-upload-video.onrender.com/uploadImage",
         {
