@@ -9,6 +9,12 @@ import Advanced from "@/components/advanced";
 import mint_fail_img from "@/assets/mint_fail.jpg";
 import mint_success_img from "@/assets/mint_success.jpg";
 import { SignIn } from "@/components/SignIn";
+// import {
+//   ChatView,
+//   ChatUIProvider,
+//   darkChatTheme,
+//   MODAL_POSITION_TYPE,
+// } from "@pushprotocol/uiweb";
 
 import { Step } from "@/core/setting";
 import { useSession } from "next-auth/react";
@@ -18,6 +24,13 @@ import { PushAPI, CONSTANTS } from "@pushprotocol/restapi";
 
 // Ethers or Viem, both are supported
 import { ethers } from "ethers";
+import { useChatStore } from "@/store/chatStore";
+
+// Add this helper function at the top of the file, outside of the component
+const generateRandomGroupName = () => {
+  const randomNum = Math.floor(Math.random() * 10000);
+  return `news group${randomNum}`;
+};
 
 const MintFail = () => {
   return (
@@ -55,9 +68,13 @@ const Home = () => {
   const [modalShow, setModalShow] = useState<boolean>(true);
   const [showMintFail, setShowMintFail] = useState<boolean>(false);
   const [showMintSuccess, setShowMintSuccess] = useState<boolean>(false);
-
   // Add new state for Push Chat
-  const [pushChat, setPushChat] = useState<PushAPI | null>(null);
+  const setPushChatInstance = useChatStore(
+    (state) => state.setPushChatInstance
+  );
+  const setChats = useChatStore((state) => state.setChats);
+  const setChatId = useChatStore((state) => state.setChatId);
+  const setToWalletAddress = useChatStore((state) => state.setToWalletAddress);
 
   const msleep = async (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms));
@@ -160,19 +177,27 @@ const Home = () => {
 
   // Add async function to initialize Push Chat
   const initializePushChat = async () => {
+    console.log("initializePushChat");
     try {
       const signer = ethers.Wallet.createRandom();
+      console.log("signer", signer);
       const userAlice = await PushAPI.initialize(signer, {
         env: CONSTANTS.ENV.STAGING,
       });
+      console.log("userAlice", userAlice);
 
-      const toWalletAddress = ethers.Wallet.createRandom().address;
+      // Add 'eip155:' prefix to the wallet address
+      const toWalletAddress = `eip155:0x94D4fc2448B288a576C1c0d66F0B537907698b45`;
+      setToWalletAddress(toWalletAddress);
+
+      console.log("toWalletAddress", toWalletAddress, userAlice);
 
       // Send a message to Bob
       await userAlice.chat.send(toWalletAddress, {
         content: "Hello Bob!",
         type: "Text",
       });
+      console.log("sent message to bob", userAlice, toWalletAddress);
 
       const stream = await userAlice.initStream([CONSTANTS.STREAM.CHAT]);
 
@@ -184,18 +209,32 @@ const Home = () => {
       // Connect Stream
       stream.connect();
 
-      setPushChat(userAlice);
+      // Use random group name
+      const randomGroupName = generateRandomGroupName();
+      const createdGroup = await userAlice.chat.group.create(randomGroupName, {
+        image: "random images1",
+      });
+      console.log("createdGroup1", createdGroup);
+      setChatId(createdGroup.chatId);
+
+      const aliceChats = await userAlice.chat.list("CHATS");
+      setChats(aliceChats);
+      setPushChatInstance(userAlice);
     } catch (error) {
       console.error("Failed to initialize Push Chat:", error);
     }
   };
 
   // Use useEffect to initialize Push Chat after sign in
+  // useEffect(() => {
+  //   if (session && !pushChat) {
+  //     initializePushChat();
+  //   }
+  // }, [session, pushChat]);
+
   useEffect(() => {
-    if (session && !pushChat) {
-      initializePushChat();
-    }
-  }, [session, pushChat]);
+    initializePushChat();
+  }, [setPushChatInstance]);
 
   // If loading, show nothing
   if (status === "loading") {
@@ -207,7 +246,7 @@ const Home = () => {
   }
 
   // If not authenticated, show only SignIn
-  if (!session) {
+  if (session) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-black">
         <SignIn />
