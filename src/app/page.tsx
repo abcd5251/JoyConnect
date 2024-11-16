@@ -94,36 +94,40 @@ const Home = () => {
     }
   };
   const handleSubmit = async () => {
-    if (!selectedFile) {
-      alert("Please upload an image");
+    if (!selectedFile || selectedAnimation === null) {
+      alert("Please upload an image and choose your video");
       return;
     }
-    if (selectedAnimation === null) {
-      alert("Please choose your video");
-      return;
-    }
-    if (selectedFile && selectedAnimation !== null) {
-      setLoading(true);
-      setVideoUrl(null); // Reset video URL when a new submission is made
 
+    setLoading(true);
+    setVideoUrl(null);
+
+    try {
+      // IPFS Upload
+      const IPFSData = new FormData();
+      IPFSData.append("file", selectedFile);
+      
+      const IPFSResponse = await fetch(
+        `http://0.0.0.0:8025/buckets/test1/files`,
+        {
+          method: "POST",
+          body: IPFSData,
+        }
+      );
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      if (!IPFSResponse.ok) {
+        throw new Error('IPFS upload failed');
+      }
+
+      const IPFSResult = await IPFSResponse.json();
+      console.log("IPFS upload success:", IPFSResult);
+
+      // Original video processing
       const formData = new FormData();
       formData.append("image", selectedFile);
       formData.append("number", selectedAnimation.toString());
 
-      const IPFSData = new FormData();
-      IPFSData.append("file", selectedFile);
-      IPFSData.append("bucket_name", "test1");
-      
-      const IPFSResponse = await fetch(
-        "http://0.0.0.0:8070/upload",  // Updated endpoint
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      console.log("success", IPFSResponse)
-        
       const response = await fetch(
         "https://test-upload-video.onrender.com/uploadImage",
         {
@@ -139,6 +143,9 @@ const Home = () => {
         const url = window.URL.createObjectURL(blob);
         setVideoUrl(url);
       }
+    } catch (error) {
+      console.error("Upload error:", error);
+      setLoading(false);
     }
   };
 
@@ -173,7 +180,7 @@ const Home = () => {
   }
 
   // If not authenticated, show only SignIn
-  if (!session) {
+  if (session) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-black">
         <SignIn />
