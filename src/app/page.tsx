@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import change_icon from "@/assets/turn.png";
 import upload_icon from "@/assets/video_player.png";
@@ -12,6 +12,12 @@ import { SignIn } from "@/components/SignIn";
 
 import { Step } from "@/core/setting";
 import { useSession } from "next-auth/react";
+// Import restapi for function calls
+// Import socket for listening for real time messages
+import { PushAPI, CONSTANTS } from "@pushprotocol/restapi";
+
+// Ethers or Viem, both are supported
+import { ethers } from "ethers";
 
 const MintFail = () => {
   return (
@@ -49,6 +55,9 @@ const Home = () => {
   const [modalShow, setModalShow] = useState<boolean>(true);
   const [showMintFail, setShowMintFail] = useState<boolean>(false);
   const [showMintSuccess, setShowMintSuccess] = useState<boolean>(false);
+
+  // Add new state for Push Chat
+  const [pushChat, setPushChat] = useState<PushAPI | null>(null);
 
   const msleep = async (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms));
@@ -148,6 +157,45 @@ const Home = () => {
       (prevIndex) => (prevIndex + 1) % otherVideoUrls.length
     );
   };
+
+  // Add async function to initialize Push Chat
+  const initializePushChat = async () => {
+    try {
+      const signer = ethers.Wallet.createRandom();
+      const userAlice = await PushAPI.initialize(signer, {
+        env: CONSTANTS.ENV.STAGING,
+      });
+
+      const toWalletAddress = ethers.Wallet.createRandom().address;
+
+      // Send a message to Bob
+      await userAlice.chat.send(toWalletAddress, {
+        content: "Hello Bob!",
+        type: "Text",
+      });
+
+      const stream = await userAlice.initStream([CONSTANTS.STREAM.CHAT]);
+
+      // Configure stream listen events and what to do
+      stream.on(CONSTANTS.STREAM.CHAT, (message) => {
+        console.log(message);
+      });
+
+      // Connect Stream
+      stream.connect();
+
+      setPushChat(userAlice);
+    } catch (error) {
+      console.error("Failed to initialize Push Chat:", error);
+    }
+  };
+
+  // Use useEffect to initialize Push Chat after sign in
+  useEffect(() => {
+    if (session && !pushChat) {
+      initializePushChat();
+    }
+  }, [session, pushChat]);
 
   // If loading, show nothing
   if (status === "loading") {
