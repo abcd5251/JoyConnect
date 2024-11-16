@@ -17,15 +17,15 @@ export const SignIn = () => {
     );
   } else {
     return (
-      <>
-        Not signed in <br />
+      <div className="w-[90%] flex flex-col items-center justify-center max-w-md p-6 bg-white rounded-lg shadow-md">
+        <p>Please sign in to continue</p>
         <button
           className="px-4 py-2 bg-[#58FFA3] text-black rounded-xl w-full mx-5"
           onClick={() => signIn()}
         >
           Sign in
         </button>
-      </>
+      </div>
     );
   }
 };

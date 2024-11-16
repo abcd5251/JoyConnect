@@ -11,6 +11,7 @@ import mint_success_img from "@/assets/mint_success.jpg";
 import { SignIn } from "@/components/SignIn";
 
 import { Step } from "@/core/setting";
+import { useSession } from "next-auth/react";
 
 const MintFail = () => {
   return (
@@ -28,6 +29,7 @@ const MintSuccess = () => {
 };
 
 const Home = () => {
+  const { data: session, status } = useSession();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedAnimation, setSelectedAnimation] = useState<number | null>(
     null
@@ -147,185 +149,200 @@ const Home = () => {
     );
   };
 
+  // If loading, show nothing
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <div className="loader"></div>
+      </div>
+    );
+  }
+
+  // If not authenticated, show only SignIn
+  if (!session) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-black">
+        <SignIn />
+      </div>
+    );
+  }
+
+  // Main content - only shown when authenticated
   return (
-    <>
-      <div className="flex flex-col items-center justify-center min-h-screen py-2 bg-black">
-        {loading && (
-          <div className="flex items-center justify-center">
-            <div className="loader"></div>
-            <p>Loading...</p>
-          </div>
-        )}
-        {!loading && !videoUrl && (
-          <>
-            {step === Step.stepSelectVideo && (
-              <>
-                <h3 className="font-bold mb-8 text-[#8F8E8E]  text-center">
-                  Let&apos;s be someone you like.
-                </h3>
-                <div className="mb-4">
-                  <h2 className="text-white">Today&apos;s video</h2>
-                </div>
-                <div className="flex mb-4">
-                  <div className="flex flex-col items-center mx-4">
-                    <video
-                      controls
-                      className="mb-5 w-[350px] h-[350px] mx-auto"
-                      key={animationIndex}
-                      preload="metadata"
-                      poster={`${animations[animationIndex]}.gif`}
-                    >
-                      <source
-                        src={`${animations[animationIndex]}.mp4`}
-                        type="video/mp4"
-                      />
-                      Your browser does not support the video tag.
-                    </video>
-                    <button
-                      onClick={handleIndexChange}
-                      className={`d-flex items-center px-4 py-2  rounded-full text-[#9B9B9B] bg-[#2D2D2D] mb-10 mt-3`}
-                    >
-                      <Image
-                        src={change_icon}
-                        alt="turn"
-                        className="inline-block w-5 h-5 mr-2"
-                        width="30"
-                        height="30"
-                      />
-                      change
-                    </button>
-                    <button
-                      onClick={handleNext}
-                      className="px-4 py-2 bg-[#58FFA3] text-black rounded-xl w-full mx-5"
-                    >
-                      Next
-                    </button>
-                    <SignIn />
-                  </div>
-                </div>
-              </>
-            )}
-            {step === Step.stepUploadPhoto && (
-              <>
-                <h3 className="font-bold mb-8 text-[#8F8E8E]  text-center">
-                  Let&apos;s be someone you like.
-                </h3>
-                <div className="flex mb-4 w-[350px]">
-                  <div className="flex flex-col items-center mx-4 w-full">
-                    <h2 className="text-center mb-4 text-white">
-                      Upload your photo
-                    </h2>
-                    <label htmlFor="file" className="">
-                      {!selectedFile && (
-                        <div className="relative w-full">
-                          <Image
-                            width="300"
-                            height="300"
-                            src={upload_icon}
-                            className="mb-10 w-[300px] h-[300px]"
-                            alt="upload"
-                          />
-                          <Image
-                            width="50"
-                            height="50"
-                            src={upload_cloud_icon}
-                            className="mx-auto absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-                            alt="upload"
-                          />
-                        </div>
-                      )}
-                    </label>
-                    <input
-                      type="file"
-                      id="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="mb-4 border p-2 rounded hidden w-[300px] h-[300px]"
-                    />
-                    {previewUrl && (
-                      <label htmlFor="file" className="mb-4">
-                        <img
-                          src={previewUrl}
-                          alt="Uploaded"
-                          className="w-[300px] h-[300px] object-cover mb-10"
-                        />
-                      </label>
-                    )}
-                    <button
-                      onClick={handleNext}
-                      className="px-4 py-2 bg-[#58FFA3] text-black rounded-xl w-full"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </>
-        )}
-        {videoUrl && step === Step.stepResult && (
-          <div className="mt-4 w-[400px]">
-            <h3 className="font-bold mb-8 text-[#8F8E8E] text-center">
-              Let&apos;s be someone you like.
-            </h3>
-            <div className="mb-4 px-5">
-              <h2 className="text-center mb-4 text-white">
-                Here&apos;s your result
-              </h2>
-              <video controls className="mb-5 w-[350px] h-[350px] mx-auto">
-                <source src={videoUrl} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-              <div className="flex items-center mb-10 justify-between px-5 flex-wrap w-full">
-                <span className="text-white block mb-5 text-center w-full">
-                  If you are Top 3 scoring last week
-                </span>
-                <button
-                  className="border-[#FFE958] border-2 px-2 py-2 rounded-full text-[#FFE958] block mx-auto"
-                  onClick={() => {
-                    handleShowMintFail();
-                  }}
-                >
-                  Mint Special NFT
-                </button>
+    <div className="flex flex-col items-center justify-center min-h-screen py-2 bg-black">
+      {loading && (
+        <div className="flex items-center justify-center">
+          <div className="loader"></div>
+          <p>Loading...</p>
+        </div>
+      )}
+
+      {!loading && !videoUrl && (
+        <>
+          {step === Step.stepSelectVideo && (
+            <>
+              <h3 className="font-bold mb-8 text-[#8F8E8E] text-center">
+                Let&apos;s be someone you like.
+              </h3>
+              <div className="mb-4">
+                <h2 className="text-white">Today&apos;s video</h2>
               </div>
+              <div className="flex mb-4">
+                <div className="flex flex-col items-center mx-4">
+                  <video
+                    controls
+                    className="mb-5 w-[350px] h-[350px] mx-auto"
+                    key={animationIndex}
+                    preload="metadata"
+                    poster={`${animations[animationIndex]}.gif`}
+                  >
+                    <source
+                      src={`${animations[animationIndex]}.mp4`}
+                      type="video/mp4"
+                    />
+                    Your browser does not support the video tag.
+                  </video>
+                  <button
+                    onClick={handleIndexChange}
+                    className={`d-flex items-center px-4 py-2  rounded-full text-[#9B9B9B] bg-[#2D2D2D] mb-10 mt-3`}
+                  >
+                    <Image
+                      src={change_icon}
+                      alt="turn"
+                      className="inline-block w-5 h-5 mr-2"
+                      width="30"
+                      height="30"
+                    />
+                    change
+                  </button>
+                  <button
+                    onClick={handleNext}
+                    className="px-4 py-2 bg-[#58FFA3] text-black rounded-xl w-full mx-5"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+          {step === Step.stepUploadPhoto && (
+            <>
+              <h3 className="font-bold mb-8 text-[#8F8E8E]  text-center">
+                Let&apos;s be someone you like.
+              </h3>
+              <div className="flex mb-4 w-[350px]">
+                <div className="flex flex-col items-center mx-4 w-full">
+                  <h2 className="text-center mb-4 text-white">
+                    Upload your photo
+                  </h2>
+                  <label htmlFor="file" className="">
+                    {!selectedFile && (
+                      <div className="relative w-full">
+                        <Image
+                          width="300"
+                          height="300"
+                          src={upload_icon}
+                          className="mb-10 w-[300px] h-[300px]"
+                          alt="upload"
+                        />
+                        <Image
+                          width="50"
+                          height="50"
+                          src={upload_cloud_icon}
+                          className="mx-auto absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                          alt="upload"
+                        />
+                      </div>
+                    )}
+                  </label>
+                  <input
+                    type="file"
+                    id="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="mb-4 border p-2 rounded hidden w-[300px] h-[300px]"
+                  />
+                  {previewUrl && (
+                    <label htmlFor="file" className="mb-4">
+                      <img
+                        src={previewUrl}
+                        alt="Uploaded"
+                        className="w-[300px] h-[300px] object-cover mb-10"
+                      />
+                    </label>
+                  )}
+                  <button
+                    onClick={handleNext}
+                    className="px-4 py-2 bg-[#58FFA3] text-black rounded-xl w-full"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </>
+      )}
+      {videoUrl && step === Step.stepResult && (
+        <div className="mt-4 w-[400px]">
+          <h3 className="font-bold mb-8 text-[#8F8E8E] text-center">
+            Let&apos;s be someone you like.
+          </h3>
+          <div className="mb-4 px-5">
+            <h2 className="text-center mb-4 text-white">
+              Here&apos;s your result
+            </h2>
+            <video controls className="mb-5 w-[350px] h-[350px] mx-auto">
+              <source src={videoUrl} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+            <div className="flex items-center mb-10 justify-between px-5 flex-wrap w-full">
+              <span className="text-white block mb-5 text-center w-full">
+                If you are Top 3 scoring last week
+              </span>
               <button
-                className="border-[#58FFA3] border-2 px-2 py-2 rounded-full text-[#58FFA3] block mx-auto mb-10"
+                className="border-[#FFE958] border-2 px-2 py-2 rounded-full text-[#FFE958] block mx-auto"
                 onClick={() => {
-                  handleShowMintSuccess();
+                  handleShowMintFail();
                 }}
               >
-                Mint today&apos;s NFT
-              </button>
-              <button
-                onClick={handleNext}
-                className="px-4 py-2 bg-[#58FFA3] text-black rounded-xl w-full"
-              >
-                See other&apos;s work
+                Mint Special NFT
               </button>
             </div>
+            <button
+              className="border-[#58FFA3] border-2 px-2 py-2 rounded-full text-[#58FFA3] block mx-auto mb-10"
+              onClick={() => {
+                handleShowMintSuccess();
+              }}
+            >
+              Mint today&apos;s NFT
+            </button>
+            <button
+              onClick={handleNext}
+              className="px-4 py-2 bg-[#58FFA3] text-black rounded-xl w-full"
+            >
+              See other&apos;s work
+            </button>
           </div>
-        )}
-        {step === Step.stepShowOthers && (
-          <>
-            {otherVideoUrls.length > swipeCardUrlIndex ? (
-              // <>
-              //   <SwipeCard
-              //     key={swipeCardUrlIndex}
-              //     videoUrl={otherVideoUrls[swipeCardUrlIndex]}
-              //     onSwipe={handleSwipe}
-              //   />
-              // </>
-              <Advanced />
-            ) : (
-              <h1>no more videos</h1>
-            )}
-          </>
-        )}
-      </div>
-      {showMintFail && <MintFail />}
-      {showMintSuccess && <MintSuccess />}
-    </>
+        </div>
+      )}
+      {step === Step.stepShowOthers && (
+        <>
+          {otherVideoUrls.length > swipeCardUrlIndex ? (
+            // <>
+            //   <SwipeCard
+            //     key={swipeCardUrlIndex}
+            //     videoUrl={otherVideoUrls[swipeCardUrlIndex]}
+            //     onSwipe={handleSwipe}
+            //   />
+            // </>
+            <Advanced />
+          ) : (
+            <h1>no more videos</h1>
+          )}
+        </>
+      )}
+    </div>
   );
 };
 
