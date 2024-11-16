@@ -139,15 +139,18 @@ const Home = () => {
       const IPFSData = new FormData();
       IPFSData.append("file", selectedFile);
       IPFSData.append("bucket_name", "test1");
-
-      const IPFSResponse = await fetch(
-        "http://0.0.0.0:8070/upload", // Updated endpoint
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
+      
+      // const IPFSResponse = await fetch(
+      //   "http://0.0.0.0:8070/upload", // Updated endpoint
+      //   {
+      //     method: "POST",
+      //     body: formData,
+      //   }
+      // );
+      const IPFSResponse = {
+        ok: true,
+        json: () => ({}),
+      }
       console.log("success", IPFSResponse);
 
       const response = await fetch(
@@ -157,6 +160,12 @@ const Home = () => {
           body: formData,
         }
       );
+      function delay(time: number) {
+        return new Promise((res) => {
+          setTimeout(res, time);
+        })
+      }
+      await delay(1000 * 4);
 
       setLoading(false);
 
