@@ -114,7 +114,7 @@ const Home = () => {
           body: IPFSData,
         }
       );
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      
 
       if (!IPFSResponse.ok) {
         throw new Error('IPFS upload failed');
